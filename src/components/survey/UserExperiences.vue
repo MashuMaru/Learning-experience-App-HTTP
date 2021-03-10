@@ -7,7 +7,12 @@
           >Load Submitted Experiences</base-button
         >
       </div>
-      <ul>
+      <p v-if="isLoading">Loading...</p>
+      <p v-else-if="!isLoading && error">{{ error }}</p>
+      <p v-else-if="!isLoading && (!results || results.length === 0)">
+        No data is available. Start adding some survey results first.
+      </p>
+      <ul v-else>
         <survey-result
           v-for="result in results"
           :key="result.id"
@@ -28,23 +33,25 @@ export default {
   },
   data: function() {
     return {
-      results: []
+      results: [],
+      isLoading: false,
+      error: null
     };
   },
   methods: {
     loadExperiences() {
-      fetch(
-        'https://vue-http-demo-d8f01-default-rtdb.firebaseio.com/surveys.json',
-        {
-          method: 'GET'
-        }
-      )
+      this.isLoading = true;
+      this.error = null;
+      fetch('https://vue-http-demo-d8f01-default-rtdb.firebaseio.com/surveys.json', {
+        method: 'GET'
+      })
         .then(response => {
           if (response.ok) {
             return response.json();
           }
         })
         .then(data => {
+          this.isLoading = false;
           const results = [];
           for (const id in data) {
             results.push({
@@ -54,8 +61,17 @@ export default {
             });
           }
           this.results = results;
+        })
+        .catch(error => {
+          console.log(error);
+          this.isLoading = false;
+          this.error =
+            'The request has failed on the server side. Please try again later.';
         });
     }
+  },
+  mounted: function() {
+    this.loadExperiences();
   }
 };
 </script>
